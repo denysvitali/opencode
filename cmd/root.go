@@ -9,6 +9,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	zone "github.com/lrstanley/bubblezone"
+	"github.com/spf13/cobra"
+
 	"github.com/opencode-ai/opencode/internal/app"
 	"github.com/opencode-ai/opencode/internal/config"
 	"github.com/opencode-ai/opencode/internal/db"
@@ -18,7 +20,6 @@ import (
 	"github.com/opencode-ai/opencode/internal/pubsub"
 	"github.com/opencode-ai/opencode/internal/tui"
 	"github.com/opencode-ai/opencode/internal/version"
-	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{

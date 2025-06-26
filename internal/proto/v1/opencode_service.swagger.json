@@ -1,0 +1,1393 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "v1/opencode_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "OpenCodeService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/agent/cancel": {
+      "post": {
+        "summary": "Cancel current agent operation",
+        "operationId": "OpenCodeService_CancelAgent",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CancelAgentRequest"
+            }
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/agent/model": {
+      "put": {
+        "summary": "Set agent model",
+        "operationId": "OpenCodeService_SetModel",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SetModelResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SetModelRequest"
+            }
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/agent/status": {
+      "get": {
+        "summary": "Get agent status",
+        "operationId": "OpenCodeService_GetAgentStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetAgentStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/files": {
+      "get": {
+        "summary": "List workspace files",
+        "operationId": "OpenCodeService_ListFiles",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListFilesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "path",
+            "description": "Directory path, empty for workspace root",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "recursive",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "patterns",
+            "description": "Glob patterns to include",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          },
+          {
+            "name": "excludePatterns",
+            "description": "Glob patterns to exclude",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/files/changes": {
+      "get": {
+        "summary": "Get file changes/diff",
+        "operationId": "OpenCodeService_GetFileChanges",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetFileChangesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "sinceVersion",
+            "description": "Optional: get changes since this version",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/files/{path}": {
+      "get": {
+        "summary": "Read file content",
+        "operationId": "OpenCodeService_ReadFile",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ReadFileResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": ".+"
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      },
+      "delete": {
+        "summary": "Delete file",
+        "operationId": "OpenCodeService_DeleteFile",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": ".+"
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      },
+      "put": {
+        "summary": "Write file content",
+        "operationId": "OpenCodeService_WriteFile",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1WriteFileResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "pattern": ".+"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/OpenCodeServiceWriteFileBody"
+            }
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check for container status",
+        "operationId": "OpenCodeService_Health",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1HealthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/messages": {
+      "get": {
+        "summary": "List message history",
+        "operationId": "OpenCodeService_ListMessages",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListMessagesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pagination.limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pagination.offset",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pagination.cursor",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "roleFilter",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "MESSAGE_ROLE_UNSPECIFIED",
+              "MESSAGE_ROLE_USER",
+              "MESSAGE_ROLE_ASSISTANT",
+              "MESSAGE_ROLE_TOOL"
+            ],
+            "default": "MESSAGE_ROLE_UNSPECIFIED"
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      },
+      "delete": {
+        "summary": "Clear all messages",
+        "operationId": "OpenCodeService_ClearMessages",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "OpenCodeService"
+        ]
+      },
+      "post": {
+        "summary": "Send a message and get streaming response",
+        "operationId": "OpenCodeService_SendMessage",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1SendMessageResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of v1SendMessageResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SendMessageRequest"
+            }
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/messages/stream": {
+      "get": {
+        "summary": "Stream real-time message updates",
+        "operationId": "OpenCodeService_StreamMessages",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1StreamMessagesResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of v1StreamMessagesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/models": {
+      "get": {
+        "summary": "List available models",
+        "operationId": "OpenCodeService_ListModels",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListModelsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "provider",
+            "description": "Optional: filter by provider",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/session": {
+      "get": {
+        "summary": "Get current session info (auto-created if none exists)",
+        "operationId": "OpenCodeService_GetSession",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetSessionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/session/reset": {
+      "post": {
+        "summary": "Reset/clear the current session",
+        "operationId": "OpenCodeService_ResetSession",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ResetSessionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ResetSessionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    },
+    "/session/stats": {
+      "get": {
+        "summary": "Get session statistics",
+        "operationId": "OpenCodeService_GetSessionStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetSessionStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "OpenCodeService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "OpenCodeServiceWriteFileBody": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "createDirs": {
+          "type": "boolean",
+          "title": "Create parent directories if they don't exist"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1AgentStatus": {
+      "type": "string",
+      "enum": [
+        "AGENT_STATUS_UNSPECIFIED",
+        "AGENT_STATUS_IDLE",
+        "AGENT_STATUS_PROCESSING",
+        "AGENT_STATUS_WAITING_PERMISSION",
+        "AGENT_STATUS_ERROR"
+      ],
+      "default": "AGENT_STATUS_UNSPECIFIED"
+    },
+    "v1Attachment": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "Attachment represents file attachments to messages"
+    },
+    "v1BinaryContent": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string",
+          "format": "byte"
+        },
+        "base64Data": {
+          "type": "string",
+          "title": "Alternative to raw bytes"
+        }
+      }
+    },
+    "v1CancelAgentRequest": {
+      "type": "object",
+      "title": "Agent messages"
+    },
+    "v1ContentDelta": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "v1ContentPart": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "$ref": "#/definitions/v1TextContent"
+        },
+        "binary": {
+          "$ref": "#/definitions/v1BinaryContent"
+        },
+        "toolCall": {
+          "$ref": "#/definitions/v1ToolCallContent"
+        },
+        "toolResult": {
+          "$ref": "#/definitions/v1ToolResultContent"
+        },
+        "finish": {
+          "$ref": "#/definitions/v1FinishContent"
+        },
+        "reasoning": {
+          "$ref": "#/definitions/v1ReasoningContent"
+        }
+      },
+      "title": "Content part represents different types of content in messages"
+    },
+    "v1ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        }
+      }
+    },
+    "v1FileChange": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/v1FileChangeType"
+        },
+        "oldContent": {
+          "type": "string",
+          "title": "For modified files"
+        },
+        "newContent": {
+          "type": "string",
+          "title": "For modified/created files"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "v1FileChangeType": {
+      "type": "string",
+      "enum": [
+        "FILE_CHANGE_TYPE_UNSPECIFIED",
+        "FILE_CHANGE_TYPE_CREATED",
+        "FILE_CHANGE_TYPE_MODIFIED",
+        "FILE_CHANGE_TYPE_DELETED"
+      ],
+      "default": "FILE_CHANGE_TYPE_UNSPECIFIED"
+    },
+    "v1FileInfo": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "isDirectory": {
+          "type": "boolean"
+        },
+        "size": {
+          "type": "string",
+          "format": "int64"
+        },
+        "modifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "mimeType": {
+          "type": "string"
+        }
+      }
+    },
+    "v1FinishContent": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "$ref": "#/definitions/v1FinishReason"
+        },
+        "time": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "v1FinishReason": {
+      "type": "string",
+      "enum": [
+        "FINISH_REASON_UNSPECIFIED",
+        "FINISH_REASON_END_TURN",
+        "FINISH_REASON_STOP",
+        "FINISH_REASON_CANCELED",
+        "FINISH_REASON_ERROR",
+        "FINISH_REASON_PERMISSION_DENIED"
+      ],
+      "default": "FINISH_REASON_UNSPECIFIED"
+    },
+    "v1GetAgentStatusResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/v1AgentStatus"
+        },
+        "currentOperation": {
+          "type": "string"
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "model": {
+          "type": "string"
+        }
+      }
+    },
+    "v1GetFileChangesResponse": {
+      "type": "object",
+      "properties": {
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1FileChange"
+          }
+        },
+        "currentVersion": {
+          "type": "string"
+        }
+      }
+    },
+    "v1GetSessionResponse": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/definitions/v1Session"
+        }
+      }
+    },
+    "v1GetSessionStatsResponse": {
+      "type": "object",
+      "properties": {
+        "totalMessages": {
+          "type": "string",
+          "format": "int64"
+        },
+        "userMessages": {
+          "type": "string",
+          "format": "int64"
+        },
+        "assistantMessages": {
+          "type": "string",
+          "format": "int64"
+        },
+        "toolMessages": {
+          "type": "string",
+          "format": "int64"
+        },
+        "promptTokens": {
+          "type": "string",
+          "format": "int64"
+        },
+        "completionTokens": {
+          "type": "string",
+          "format": "int64"
+        },
+        "totalCost": {
+          "type": "number",
+          "format": "double"
+        },
+        "lastActivity": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "modelsUsed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "currentModel": {
+          "type": "string"
+        }
+      }
+    },
+    "v1HealthResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/v1HealthStatus"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Health check response"
+    },
+    "v1HealthStatus": {
+      "type": "string",
+      "enum": [
+        "HEALTH_STATUS_UNSPECIFIED",
+        "HEALTH_STATUS_SERVING",
+        "HEALTH_STATUS_NOT_SERVING",
+        "HEALTH_STATUS_UNKNOWN"
+      ],
+      "default": "HEALTH_STATUS_UNSPECIFIED"
+    },
+    "v1ListFilesResponse": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1FileInfo"
+          }
+        }
+      }
+    },
+    "v1ListMessagesResponse": {
+      "type": "object",
+      "properties": {
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Message"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1PaginationResponse"
+        }
+      }
+    },
+    "v1ListModelsResponse": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ModelInfo"
+          }
+        }
+      }
+    },
+    "v1Message": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/v1MessageRole"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ContentPart"
+          }
+        },
+        "model": {
+          "type": "string",
+          "title": "Model ID used for this message"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finishedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Message represents a conversation message"
+    },
+    "v1MessageCompleted": {
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "finishReason": {
+          "$ref": "#/definitions/v1FinishReason"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "usage": {
+          "$ref": "#/definitions/v1TokenUsage"
+        }
+      }
+    },
+    "v1MessageCreated": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "$ref": "#/definitions/v1Message"
+        }
+      }
+    },
+    "v1MessageDeleted": {
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "type": "string"
+        }
+      }
+    },
+    "v1MessageRole": {
+      "type": "string",
+      "enum": [
+        "MESSAGE_ROLE_UNSPECIFIED",
+        "MESSAGE_ROLE_USER",
+        "MESSAGE_ROLE_ASSISTANT",
+        "MESSAGE_ROLE_TOOL"
+      ],
+      "default": "MESSAGE_ROLE_UNSPECIFIED"
+    },
+    "v1MessageStarted": {
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "v1MessageUpdated": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "$ref": "#/definitions/v1Message"
+        }
+      }
+    },
+    "v1ModelInfo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "contextWindow": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "costPer1mInput": {
+          "type": "number",
+          "format": "double"
+        },
+        "costPer1mOutput": {
+          "type": "number",
+          "format": "double"
+        },
+        "supportsAttachments": {
+          "type": "boolean"
+        },
+        "supportsTools": {
+          "type": "boolean"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v1Pagination": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "offset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "cursor": {
+          "type": "string"
+        }
+      }
+    },
+    "v1PaginationResponse": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "offset": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1ReadFileResponse": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "fileInfo": {
+          "$ref": "#/definitions/v1FileInfo"
+        }
+      }
+    },
+    "v1ReasoningContent": {
+      "type": "object",
+      "properties": {
+        "thinking": {
+          "type": "string"
+        }
+      }
+    },
+    "v1ResetSessionRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "title": "Optional new title"
+        }
+      }
+    },
+    "v1ResetSessionResponse": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/definitions/v1Session"
+        }
+      }
+    },
+    "v1SendMessageRequest": {
+      "type": "object",
+      "properties": {
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ContentPart"
+          }
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Attachment"
+          }
+        },
+        "model": {
+          "type": "string",
+          "title": "Optional model override"
+        }
+      },
+      "title": "Message messages"
+    },
+    "v1SendMessageResponse": {
+      "type": "object",
+      "properties": {
+        "messageStarted": {
+          "$ref": "#/definitions/v1MessageStarted"
+        },
+        "contentDelta": {
+          "$ref": "#/definitions/v1ContentDelta"
+        },
+        "toolCallStarted": {
+          "$ref": "#/definitions/v1ToolCallStarted"
+        },
+        "toolCallCompleted": {
+          "$ref": "#/definitions/v1ToolCallCompleted"
+        },
+        "messageCompleted": {
+          "$ref": "#/definitions/v1MessageCompleted"
+        },
+        "error": {
+          "$ref": "#/definitions/v1ErrorResponse"
+        }
+      }
+    },
+    "v1Session": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "parentSessionId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "messageCount": {
+          "type": "string",
+          "format": "int64"
+        },
+        "promptTokens": {
+          "type": "string",
+          "format": "int64"
+        },
+        "completionTokens": {
+          "type": "string",
+          "format": "int64"
+        },
+        "summaryMessageId": {
+          "type": "string"
+        },
+        "cost": {
+          "type": "number",
+          "format": "double"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Session represents a conversation session"
+    },
+    "v1SetModelRequest": {
+      "type": "object",
+      "properties": {
+        "modelId": {
+          "type": "string"
+        }
+      }
+    },
+    "v1SetModelResponse": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "$ref": "#/definitions/v1ModelInfo"
+        }
+      }
+    },
+    "v1StreamMessagesResponse": {
+      "type": "object",
+      "properties": {
+        "messageCreated": {
+          "$ref": "#/definitions/v1MessageCreated"
+        },
+        "messageUpdated": {
+          "$ref": "#/definitions/v1MessageUpdated"
+        },
+        "messageDeleted": {
+          "$ref": "#/definitions/v1MessageDeleted"
+        }
+      }
+    },
+    "v1TextContent": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "v1TokenUsage": {
+      "type": "object",
+      "properties": {
+        "promptTokens": {
+          "type": "string",
+          "format": "int64"
+        },
+        "completionTokens": {
+          "type": "string",
+          "format": "int64"
+        },
+        "cost": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "v1ToolCallCompleted": {
+      "type": "object",
+      "properties": {
+        "toolCallId": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "isError": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1ToolCallContent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "input": {
+          "type": "string",
+          "title": "JSON string"
+        }
+      }
+    },
+    "v1ToolCallStarted": {
+      "type": "object",
+      "properties": {
+        "toolCallId": {
+          "type": "string"
+        },
+        "toolName": {
+          "type": "string"
+        },
+        "input": {
+          "type": "string",
+          "title": "JSON string"
+        }
+      }
+    },
+    "v1ToolResultContent": {
+      "type": "object",
+      "properties": {
+        "toolCallId": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "string",
+          "title": "JSON string"
+        },
+        "isError": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1WriteFileResponse": {
+      "type": "object",
+      "properties": {
+        "fileInfo": {
+          "$ref": "#/definitions/v1FileInfo"
+        }
+      }
+    }
+  }
+}

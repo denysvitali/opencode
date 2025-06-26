@@ -67,6 +67,23 @@ paru -S opencode-ai-bin
 go install github.com/opencode-ai/opencode@latest
 ```
 
+### Using Docker
+
+```bash
+# Pull and run the latest image
+docker pull ghcr.io/denysvitali/opencode:latest
+
+# Run OpenCode server (API mode)
+docker run -p 8080:8080 -p 8081:8081 \
+  -v ./workspace:/workspace \
+  ghcr.io/denysvitali/opencode:latest
+
+# Run with docker-compose
+docker-compose -f docker-compose.api.yml up
+```
+
+For more Docker usage examples, see [DOCKER.md](DOCKER.md).
+
 ## Configuration
 
 OpenCode looks for configuration in the following locations:
