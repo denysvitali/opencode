@@ -355,18 +355,14 @@ components:
         opencode.v1.HealthResponse:
             example:
                 details:
-                    key1:
-                        key: ""
-                        value: ""
-                    key2:
-                        key: ""
-                        value: ""
+                    key1: ""
+                    key2: ""
                 status: HEALTH_STATUS_UNSPECIFIED
                 timestamp: 1741589979
             properties:
                 details:
                     additionalProperties:
-                        $ref: '#/components/schemas/opencode.v1.HealthResponse_DetailsEntry'
+                        type: string
                     type: object
                 status:
                     enum:
