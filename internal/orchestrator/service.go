@@ -33,10 +33,12 @@ func NewService(ctx context.Context, config *models.Config) (*Service, error) {
 	// Create runtime based on configuration
 	var rt models.Runtime
 	var err error
+	var kubeConfig *models.KubernetesConfig
 
 	switch config.RuntimeConfig.GetType() {
 	case "kubernetes":
-		kubeConfig, ok := config.RuntimeConfig.(*models.KubernetesConfig)
+		var ok bool
+		kubeConfig, ok = config.RuntimeConfig.(*models.KubernetesConfig)
 		if !ok {
 			return nil, fmt.Errorf("invalid kubernetes configuration")
 		}
@@ -48,18 +50,31 @@ func NewService(ctx context.Context, config *models.Config) (*Service, error) {
 		return nil, fmt.Errorf("unsupported runtime type: %s", config.RuntimeConfig.GetType())
 	}
 
-	// Create session manager (in-memory store)
-	store := session.NewInMemorySessionStore()
+	// Create session manager - use Kubernetes ConfigMaps for state persistence
+	// This provides consistency across replicas and native resource lifecycle management
+	var sessionManager models.SessionManager
+	if kubeConfig != nil {
+		sessionManager, err = session.NewKubernetesSessionStore(&session.Config{
+			Namespace:      kubeConfig.Namespace,
+			KubeConfigPath: kubeConfig.Kubeconfig,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create kubernetes session store: %w", err)
+		}
+	} else {
+		// Fallback to in-memory store for non-Kubernetes runtimes
+		sessionManager = session.NewInMemorySessionStore()
+	}
 
 	// Create connection pool for efficient HTTP handling
 	poolConfig := DefaultPoolConfig()
 	connectionPool := NewConnectionPool(rt, poolConfig)
 
 	// Create advanced proxy manager with connection pooling
-	proxyManager := NewProxyManager(rt, store)
+	proxyManager := NewProxyManager(rt, sessionManager)
 
 	// Create service with the components
-	service, err := NewServiceWithComponents(config, store, rt, proxyManager, connectionPool)
+	service, err := NewServiceWithComponents(config, sessionManager, rt, proxyManager, connectionPool)
 	if err != nil {
 		return nil, err
 	}
