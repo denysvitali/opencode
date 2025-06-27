@@ -27,20 +27,17 @@ type Runtime struct {
 
 // NewRuntime creates a new Kubernetes runtime
 func NewRuntime(config *models.KubernetesConfig) (*Runtime, error) {
-	var kubeConfig *rest.Config
-	var err error
-
-	if config.Kubeconfig == "" {
-		kubeConfig, err = rest.InClusterConfig()
-	} else {
-		kubeConfig, err = clientcmd.BuildConfigFromFlags("", config.Kubeconfig)
-	}
-
+	// Check if we're in a Kubernetes cluster
+	cfg, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create kubernetes config: %w", err)
+		// Try to use kubectl config
+		cfg, err = clientcmd.BuildConfigFromFlags("", config.Kubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create kubernetes config: %w", err)
+		}
 	}
 
-	client, err := kubernetes.NewForConfig(kubeConfig)
+	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kubernetes client: %w", err)
 	}
