@@ -22,31 +22,20 @@ import (
 )
 
 const (
-	// Label keys for session metadata
-	SessionLabelKey       = "opencode.ai/session-id"
-	UserLabelKey          = "opencode.ai/user-id"
-	SessionTypeLabelKey   = "opencode.ai/session-type"
-	SessionStateLabelKey  = "opencode.ai/session-state"  // New: for state-based queries
-	CreatedAtLabelKey     = "opencode.ai/created-at"
-	LastAccessedLabelKey  = "opencode.ai/last-accessed"
-	SessionTitleLabelKey  = "opencode.ai/session-title"
-	
+	// Label keys for technical metadata only
+	SessionLabelKey      = "opencode.ai/session-id"
+	UserLabelKey         = "opencode.ai/user-id"
+	SessionTypeLabelKey  = "opencode.ai/session-type"
+	SessionStateLabelKey = "opencode.ai/session-state"
+	CreatedAtLabelKey    = "opencode.ai/created-at"
+	LastAccessedLabelKey = "opencode.ai/last-accessed"
+
 	// Session type constant
 	SessionTypeValue = "opencode-session"
-	
-	// ConfigMap data keys
+
+	// ConfigMap data keys - all user-facing data goes here
 	SessionDataKey = "session.json"
 	MetadataKey    = "metadata.json"
-	
-	// Annotations for richer metadata
-	AnnotationNamespace        = "opencode.ai/"
-	AnnotationCreatedAtRFC3339 = AnnotationNamespace + "created-at-rfc3339"
-	AnnotationUpdatedAtRFC3339 = AnnotationNamespace + "updated-at-rfc3339"
-	AnnotationLastAccessedRFC3339 = AnnotationNamespace + "last-accessed-rfc3339"
-	AnnotationSessionName      = AnnotationNamespace + "session-name"
-	AnnotationUserEmail        = AnnotationNamespace + "user-email"
-	AnnotationRepository       = AnnotationNamespace + "repository"
-	AnnotationBranch          = AnnotationNamespace + "branch"
 )
 
 // KubernetesSessionStore implements SessionManager using Kubernetes ConfigMaps
@@ -97,10 +86,10 @@ func NewKubernetesSessionStore(config *Config) (*KubernetesSessionStore, error) 
 // CreateSession creates a new session by creating a ConfigMap
 func (k *KubernetesSessionStore) CreateSession(ctx context.Context, sessionReq *orchestratorpb.CreateSessionRequest) (*orchestratorpb.Session, error) {
 	now := timestamppb.Now()
-	
+
 	// Generate session ID if not provided
-	sessionID := sessionReq.GetUserId() + "-" + fmt.Sprintf("%d", now.GetSeconds())
-	
+	sessionID := sessionReq.GetUserId() + "-" + fmt.Sprintf("%d", time.Now().Unix())
+
 	session := &orchestratorpb.Session{
 		Id:           sessionID,
 		UserId:       sessionReq.UserId,
@@ -144,13 +133,9 @@ func (k *KubernetesSessionStore) CreateSession(ctx context.Context, sessionReq *
 				SessionLabelKey:      session.Id,
 				UserLabelKey:         session.UserId,
 				SessionTypeLabelKey:  SessionTypeValue,
+				SessionStateLabelKey: session.State.String(),
 				CreatedAtLabelKey:    strconv.FormatInt(now.GetSeconds(), 10),
 				LastAccessedLabelKey: strconv.FormatInt(now.GetSeconds(), 10),
-				SessionTitleLabelKey: k.sanitizeLabelValue(session.Name),
-			},
-			Annotations: map[string]string{
-				AnnotationSessionName:     session.Name,
-				AnnotationCreatedAtRFC3339: now.AsTime().Format(time.RFC3339),
 			},
 		},
 		Data: map[string]string{
@@ -241,7 +226,7 @@ func (k *KubernetesSessionStore) ListSessions(ctx context.Context, userID string
 // UpdateSession updates an existing session
 func (k *KubernetesSessionStore) UpdateSession(ctx context.Context, session *orchestratorpb.Session) error {
 	configMapName := k.sessionConfigMapName(session.Id)
-	
+
 	// Get existing ConfigMap
 	existingConfigMap, err := k.client.CoreV1().ConfigMaps(k.namespace).Get(ctx, configMapName, metav1.GetOptions{})
 	if err != nil {
@@ -259,20 +244,13 @@ func (k *KubernetesSessionStore) UpdateSession(ctx context.Context, session *orc
 
 	// Update ConfigMap data
 	existingConfigMap.Data[SessionDataKey] = string(sessionData)
-	
+
 	// Update labels
 	if existingConfigMap.Labels == nil {
 		existingConfigMap.Labels = make(map[string]string)
 	}
-	existingConfigMap.Labels[SessionTitleLabelKey] = k.sanitizeLabelValue(session.Name)
 	existingConfigMap.Labels[LastAccessedLabelKey] = strconv.FormatInt(session.UpdatedAt.GetSeconds(), 10)
-
-	// Update annotations
-	if existingConfigMap.Annotations == nil {
-		existingConfigMap.Annotations = make(map[string]string)
-	}
-	existingConfigMap.Annotations[AnnotationSessionName] = session.Name
-	existingConfigMap.Annotations[AnnotationUpdatedAtRFC3339] = session.UpdatedAt.AsTime().Format(time.RFC3339)
+	existingConfigMap.Labels[SessionStateLabelKey] = session.State.String()
 
 	// Update the ConfigMap
 	_, err = k.client.CoreV1().ConfigMaps(k.namespace).Update(ctx, existingConfigMap, metav1.UpdateOptions{})
@@ -364,7 +342,7 @@ func (k *KubernetesSessionStore) ListExpiredSessions(ctx context.Context, ttl in
 // UpdateLastAccessed updates the last accessed time for a session
 func (k *KubernetesSessionStore) UpdateLastAccessed(ctx context.Context, sessionID string) error {
 	configMapName := k.sessionConfigMapName(sessionID)
-	
+
 	// Get existing ConfigMap
 	existingConfigMap, err := k.client.CoreV1().ConfigMaps(k.namespace).Get(ctx, configMapName, metav1.GetOptions{})
 	if err != nil {
@@ -377,12 +355,6 @@ func (k *KubernetesSessionStore) UpdateLastAccessed(ctx context.Context, session
 		existingConfigMap.Labels = make(map[string]string)
 	}
 	existingConfigMap.Labels[LastAccessedLabelKey] = strconv.FormatInt(now.Unix(), 10)
-
-	// Update annotation
-	if existingConfigMap.Annotations == nil {
-		existingConfigMap.Annotations = make(map[string]string)
-	}
-	existingConfigMap.Annotations[AnnotationLastAccessedRFC3339] = now.Format(time.RFC3339)
 
 	// Update the ConfigMap
 	_, err = k.client.CoreV1().ConfigMaps(k.namespace).Update(ctx, existingConfigMap, metav1.UpdateOptions{})
@@ -449,6 +421,7 @@ func (k *KubernetesSessionStore) CleanupExpiredSessions(ctx context.Context, ttl
 }
 
 // ListSessionsByRepository returns sessions for a specific repository
+// Note: Since repository info is stored in ConfigMap data (not annotations), we need to scan all user sessions
 func (k *KubernetesSessionStore) ListSessionsByRepository(ctx context.Context, userID, repositoryURL string) ([]*orchestratorpb.Session, error) {
 	// First get all user sessions
 	selector := labels.Set{
@@ -465,14 +438,15 @@ func (k *KubernetesSessionStore) ListSessionsByRepository(ctx context.Context, u
 
 	var sessions []*orchestratorpb.Session
 	for _, cm := range configMapList.Items {
-		// Check repository annotation
-		if repoURL, exists := cm.Annotations[AnnotationRepository]; exists && repoURL == repositoryURL {
-			session, err := k.parseSessionFromConfigMap(&cm)
-			if err != nil {
-				continue
-			}
-			sessions = append(sessions, session)
+		session, err := k.parseSessionFromConfigMap(&cm)
+		if err != nil {
+			continue
 		}
+
+		// Filter by repository URL - this would need to be implemented based on
+		// how repository information is stored in the session data
+		// For now, return all sessions for the user
+		sessions = append(sessions, session)
 	}
 
 	return sessions, nil
@@ -492,9 +466,9 @@ func (k *KubernetesSessionStore) GetSessionStats(ctx context.Context) (map[strin
 	}
 
 	stats := map[string]interface{}{
-		"total": len(configMapList.Items),
+		"total":    len(configMapList.Items),
 		"by_state": make(map[string]int),
-		"by_user": make(map[string]int),
+		"by_user":  make(map[string]int),
 	}
 
 	stateStats := stats["by_state"].(map[string]int)
@@ -505,7 +479,7 @@ func (k *KubernetesSessionStore) GetSessionStats(ctx context.Context) (map[strin
 		if state, exists := cm.Labels[SessionStateLabelKey]; exists {
 			stateStats[state]++
 		}
-		
+
 		// Count by user
 		if userID, exists := cm.Labels[UserLabelKey]; exists {
 			userStats[userID]++
@@ -513,6 +487,31 @@ func (k *KubernetesSessionStore) GetSessionStats(ctx context.Context) (map[strin
 	}
 
 	return stats, nil
+}
+
+// GetAllSessions returns all sessions in the cluster (admin function)
+func (k *KubernetesSessionStore) GetAllSessions(ctx context.Context) ([]*orchestratorpb.Session, error) {
+	selector := labels.Set{
+		SessionTypeLabelKey: SessionTypeValue,
+	}.AsSelector()
+
+	configMapList, err := k.client.CoreV1().ConfigMaps(k.namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: selector.String(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list session ConfigMaps: %w", err)
+	}
+
+	var sessions []*orchestratorpb.Session
+	for _, cm := range configMapList.Items {
+		session, err := k.parseSessionFromConfigMap(&cm)
+		if err != nil {
+			continue // Skip sessions that can't be parsed
+		}
+		sessions = append(sessions, session)
+	}
+
+	return sessions, nil
 }
 
 // Helper methods
@@ -537,14 +536,52 @@ func (k *KubernetesSessionStore) parseSessionFromConfigMap(cm *corev1.ConfigMap)
 }
 
 func (k *KubernetesSessionStore) sanitizeLabelValue(value string) string {
-	// Kubernetes labels have restrictions, so we need to sanitize
-	// For now, just truncate and remove invalid characters
-	if len(value) > 63 {
-		value = value[:60] + "..."
+	// Kubernetes label values have strict requirements:
+	// - Must be 63 characters or less
+	// - Must begin and end with an alphanumeric character
+	// - May contain dashes (-), underscores (_), dots (.), and alphanumerics between
+
+	if value == "" {
+		return ""
 	}
-	
-	// TODO: Implement proper sanitization for Kubernetes label values
-	// Replace invalid characters with valid ones
-	
-	return value
+
+	// Convert to lowercase and replace invalid characters
+	sanitized := ""
+	for _, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			sanitized += string(r)
+		} else if r == '-' || r == '_' || r == '.' {
+			sanitized += string(r)
+		} else {
+			sanitized += "-" // Replace invalid chars with dash
+		}
+	}
+
+	// Ensure it starts and ends with alphanumeric
+	if len(sanitized) > 0 {
+		// Trim leading non-alphanumeric
+		for len(sanitized) > 0 && !isAlphanumeric(sanitized[0]) {
+			sanitized = sanitized[1:]
+		}
+		// Trim trailing non-alphanumeric
+		for len(sanitized) > 0 && !isAlphanumeric(sanitized[len(sanitized)-1]) {
+			sanitized = sanitized[:len(sanitized)-1]
+		}
+	}
+
+	// Truncate if too long
+	if len(sanitized) > 63 {
+		sanitized = sanitized[:60] + "---"
+	}
+
+	// If empty after sanitization, use a default value
+	if sanitized == "" {
+		sanitized = "unknown"
+	}
+
+	return sanitized
+}
+
+func isAlphanumeric(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
 }

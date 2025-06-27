@@ -260,7 +260,7 @@ func (r *Runtime) createPod(ctx context.Context, session *orchestratorpb.Session
 	}
 
 	// Add environment variables from session config
-	if session.Config.Environment != nil {
+	if session.Config != nil && session.Config.Environment != nil {
 		for key, value := range session.Config.Environment {
 			pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, corev1.EnvVar{
 				Name:  key,
@@ -301,11 +301,7 @@ func (r *Runtime) deletePod(ctx context.Context, sessionID string) error {
 }
 
 func (r *Runtime) createPVC(ctx context.Context, session *orchestratorpb.Session) error {
-	sessionConfig := session.Config
-	if sessionConfig == nil {
-		return fmt.Errorf("session config is required for PVC creation")
-	}
-	pvcName := fmt.Sprintf("opencode-workspace-%s", session.Id[:8])
+	pvcName := fmt.Sprintf("opencode-workspace-%s", session.Id)
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      pvcName,
