@@ -93,20 +93,28 @@ components:
         opencode.orchestrator.v1.CreateSessionRequest:
             example:
                 config:
-                    environment: null
-                    repository: null
+                    environment:
+                        key1: null
+                        key2: null
+                    repository:
+                        ref: ""
+                        url: ""
                 labels:
-                    key: ""
-                    value: ""
+                    key1:
+                        key: ""
+                        value: ""
+                    key2:
+                        key: ""
+                        value: ""
                 name: ""
                 userId: ""
             properties:
                 config:
                     $ref: '#/components/schemas/opencode.orchestrator.v1.SessionConfig'
                 labels:
-                    items:
+                    additionalProperties:
                         $ref: '#/components/schemas/opencode.orchestrator.v1.CreateSessionRequest_LabelsEntry'
-                    type: array
+                    type: object
                 name:
                     type: string
                 userId:
@@ -125,14 +133,29 @@ components:
         opencode.orchestrator.v1.CreateSessionResponse:
             example:
                 session:
-                    config: null
+                    config:
+                        environment:
+                            key1: null
+                            key2: null
+                        repository:
+                            ref: ""
+                            url: ""
                     createdAt: 1741589979
                     id: ""
-                    labels: null
+                    labels:
+                        key1: null
+                        key2: null
                     lastAccessed: 1741589979
                     name: ""
                     state: SESSION_STATE_UNKNOWN
-                    status: null
+                    status:
+                        internalEndpoint: ""
+                        message: ""
+                        podName: ""
+                        podNamespace: ""
+                        pvcName: ""
+                        ready: true
+                        readyAt: 1741589979
                     updatedAt: 1741589979
                     userId: ""
             properties:
@@ -142,14 +165,29 @@ components:
         opencode.orchestrator.v1.GetSessionResponse:
             example:
                 session:
-                    config: null
+                    config:
+                        environment:
+                            key1: null
+                            key2: null
+                        repository:
+                            ref: ""
+                            url: ""
                     createdAt: 1741589979
                     id: ""
-                    labels: null
+                    labels:
+                        key1: null
+                        key2: null
                     lastAccessed: 1741589979
                     name: ""
                     state: SESSION_STATE_UNKNOWN
-                    status: null
+                    status:
+                        internalEndpoint: ""
+                        message: ""
+                        podName: ""
+                        podNamespace: ""
+                        pvcName: ""
+                        ready: true
+                        readyAt: 1741589979
                     updatedAt: 1741589979
                     userId: ""
             properties:
@@ -159,16 +197,20 @@ components:
         opencode.orchestrator.v1.HealthResponse:
             example:
                 details:
-                    key: ""
-                    value: ""
+                    key1:
+                        key: ""
+                        value: ""
+                    key2:
+                        key: ""
+                        value: ""
                 status: UNKNOWN
                 timestamp: 1741589979
                 version: ""
             properties:
                 details:
-                    items:
+                    additionalProperties:
                         $ref: '#/components/schemas/opencode.orchestrator.v1.HealthResponse_DetailsEntry'
-                    type: array
+                    type: object
                 status:
                     enum:
                         - UNKNOWN
@@ -196,14 +238,29 @@ components:
             example:
                 nextPageToken: ""
                 sessions:
-                    config: null
+                    config:
+                        environment:
+                            key1: null
+                            key2: null
+                        repository:
+                            ref: ""
+                            url: ""
                     createdAt: 1741589979
                     id: ""
-                    labels: null
+                    labels:
+                        key1: null
+                        key2: null
                     lastAccessed: 1741589979
                     name: ""
                     state: SESSION_STATE_UNKNOWN
-                    status: null
+                    status:
+                        internalEndpoint: ""
+                        message: ""
+                        podName: ""
+                        podNamespace: ""
+                        pvcName: ""
+                        ready: true
+                        readyAt: 1741589979
                     updatedAt: 1741589979
                     userId: ""
                 totalSize: 0
@@ -222,8 +279,12 @@ components:
             example:
                 body: ""
                 headers:
-                    key: ""
-                    value: ""
+                    key1:
+                        key: ""
+                        value: ""
+                    key2:
+                        key: ""
+                        value: ""
                 method: ""
                 path: ""
                 sessionId: ""
@@ -233,9 +294,9 @@ components:
                     format: byte
                     type: string
                 headers:
-                    items:
+                    additionalProperties:
                         $ref: '#/components/schemas/opencode.orchestrator.v1.ProxyHTTPRequest_HeadersEntry'
-                    type: array
+                    type: object
                 method:
                     type: string
                 path:
@@ -259,17 +320,21 @@ components:
             example:
                 body: ""
                 headers:
-                    key: ""
-                    value: ""
+                    key1:
+                        key: ""
+                        value: ""
+                    key2:
+                        key: ""
+                        value: ""
                 statusCode: 0
             properties:
                 body:
                     format: byte
                     type: string
                 headers:
-                    items:
+                    additionalProperties:
                         $ref: '#/components/schemas/opencode.orchestrator.v1.ProxyHTTPResponse_HeadersEntry'
-                    type: array
+                    type: object
                 statusCode:
                     format: int32
                     type: integer
@@ -308,13 +373,21 @@ components:
         opencode.orchestrator.v1.Session:
             example:
                 config:
-                    environment: null
-                    repository: null
+                    environment:
+                        key1: null
+                        key2: null
+                    repository:
+                        ref: ""
+                        url: ""
                 createdAt: 1741589979
                 id: ""
                 labels:
-                    key: ""
-                    value: ""
+                    key1:
+                        key: ""
+                        value: ""
+                    key2:
+                        key: ""
+                        value: ""
                 lastAccessed: 1741589979
                 name: ""
                 state: SESSION_STATE_UNKNOWN
@@ -337,9 +410,9 @@ components:
                 id:
                     type: string
                 labels:
-                    items:
+                    additionalProperties:
                         $ref: '#/components/schemas/opencode.orchestrator.v1.Session_LabelsEntry'
-                    type: array
+                    type: object
                 lastAccessed:
                     format: int32
                     type: integer
@@ -376,16 +449,20 @@ components:
         opencode.orchestrator.v1.SessionConfig:
             example:
                 environment:
-                    key: ""
-                    value: ""
+                    key1:
+                        key: ""
+                        value: ""
+                    key2:
+                        key: ""
+                        value: ""
                 repository:
                     ref: ""
                     url: ""
             properties:
                 environment:
-                    items:
+                    additionalProperties:
                         $ref: '#/components/schemas/opencode.orchestrator.v1.SessionConfig_EnvironmentEntry'
-                    type: array
+                    type: object
                 repository:
                     $ref: '#/components/schemas/opencode.orchestrator.v1.RepositoryConfig'
             type: object

@@ -355,15 +355,19 @@ components:
         opencode.v1.HealthResponse:
             example:
                 details:
-                    key: ""
-                    value: ""
+                    key1:
+                        key: ""
+                        value: ""
+                    key2:
+                        key: ""
+                        value: ""
                 status: HEALTH_STATUS_UNSPECIFIED
                 timestamp: 1741589979
             properties:
                 details:
-                    items:
+                    additionalProperties:
                         $ref: '#/components/schemas/opencode.v1.HealthResponse_DetailsEntry'
-                    type: array
+                    type: object
                 status:
                     enum:
                         - HEALTH_STATUS_UNSPECIFIED
@@ -407,7 +411,28 @@ components:
                     finishedAt: 1741589979
                     id: ""
                     model: ""
-                    parts: null
+                    parts:
+                        - binary:
+                            base64Data: ""
+                            data: ""
+                            mimeType: ""
+                            path: ""
+                          finish:
+                            reason: FINISH_REASON_UNSPECIFIED
+                            time: 1741589979
+                          reasoning:
+                            thinking: ""
+                          text:
+                            text: ""
+                          toolCall:
+                            id: ""
+                            input: ""
+                            name: ""
+                          toolResult:
+                            content: ""
+                            isError: true
+                            metadata: ""
+                            toolCallId: ""
                     role: MESSAGE_ROLE_UNSPECIFIED
                     sessionId: ""
                     updatedAt: 1741589979
@@ -428,7 +453,8 @@ components:
         opencode.v1.ListModelsResponse:
             example:
                 models:
-                    capabilities: ""
+                    capabilities:
+                        - ""
                     contextWindow: 0
                     costPer1mInput: 0
                     costPer1mOutput: 0
@@ -450,12 +476,27 @@ components:
                 id: ""
                 model: ""
                 parts:
-                    binary: null
-                    finish: null
-                    reasoning: null
-                    text: null
-                    toolCall: null
-                    toolResult: null
+                    binary:
+                        base64Data: ""
+                        data: ""
+                        mimeType: ""
+                        path: ""
+                    finish:
+                        reason: FINISH_REASON_UNSPECIFIED
+                        time: 1741589979
+                    reasoning:
+                        thinking: ""
+                    text:
+                        text: ""
+                    toolCall:
+                        id: ""
+                        input: ""
+                        name: ""
+                    toolResult:
+                        content: ""
+                        isError: true
+                        metadata: ""
+                        toolCallId: ""
                 role: MESSAGE_ROLE_UNSPECIFIED
                 sessionId: ""
                 updatedAt: 1741589979
@@ -523,7 +564,28 @@ components:
                     finishedAt: 1741589979
                     id: ""
                     model: ""
-                    parts: null
+                    parts:
+                        - binary:
+                            base64Data: ""
+                            data: ""
+                            mimeType: ""
+                            path: ""
+                          finish:
+                            reason: FINISH_REASON_UNSPECIFIED
+                            time: 1741589979
+                          reasoning:
+                            thinking: ""
+                          text:
+                            text: ""
+                          toolCall:
+                            id: ""
+                            input: ""
+                            name: ""
+                          toolResult:
+                            content: ""
+                            isError: true
+                            metadata: ""
+                            toolCallId: ""
                     role: MESSAGE_ROLE_UNSPECIFIED
                     sessionId: ""
                     updatedAt: 1741589979
@@ -556,7 +618,28 @@ components:
                     finishedAt: 1741589979
                     id: ""
                     model: ""
-                    parts: null
+                    parts:
+                        - binary:
+                            base64Data: ""
+                            data: ""
+                            mimeType: ""
+                            path: ""
+                          finish:
+                            reason: FINISH_REASON_UNSPECIFIED
+                            time: 1741589979
+                          reasoning:
+                            thinking: ""
+                          text:
+                            text: ""
+                          toolCall:
+                            id: ""
+                            input: ""
+                            name: ""
+                          toolResult:
+                            content: ""
+                            isError: true
+                            metadata: ""
+                            toolCallId: ""
                     role: MESSAGE_ROLE_UNSPECIFIED
                     sessionId: ""
                     updatedAt: 1741589979
@@ -677,12 +760,27 @@ components:
                     size: 0
                 model: ""
                 parts:
-                    binary: null
-                    finish: null
-                    reasoning: null
-                    text: null
-                    toolCall: null
-                    toolResult: null
+                    binary:
+                        base64Data: ""
+                        data: ""
+                        mimeType: ""
+                        path: ""
+                    finish:
+                        reason: FINISH_REASON_UNSPECIFIED
+                        time: 1741589979
+                    reasoning:
+                        thinking: ""
+                    text:
+                        text: ""
+                    toolCall:
+                        id: ""
+                        input: ""
+                        name: ""
+                    toolResult:
+                        content: ""
+                        isError: true
+                        metadata: ""
+                        toolCallId: ""
             properties:
                 attachments:
                     items:
@@ -707,7 +805,10 @@ components:
                     finishReason: FINISH_REASON_UNSPECIFIED
                     messageId: ""
                     timestamp: 1741589979
-                    usage: null
+                    usage:
+                        completionTokens: 0
+                        cost: 0
+                        promptTokens: 0
                 messageStarted:
                     messageId: ""
                     timestamp: 1741589979
@@ -783,7 +884,8 @@ components:
         opencode.v1.SetModelResponse:
             example:
                 model:
-                    capabilities: ""
+                    capabilities:
+                        - ""
                     contextWindow: 0
                     costPer1mInput: 0
                     costPer1mOutput: 0
@@ -799,11 +901,69 @@ components:
         opencode.v1.StreamMessagesResponse:
             example:
                 messageCreated:
-                    message: null
+                    message:
+                        createdAt: 1741589979
+                        finishedAt: 1741589979
+                        id: ""
+                        model: ""
+                        parts:
+                            - binary:
+                                base64Data: ""
+                                data: ""
+                                mimeType: ""
+                                path: ""
+                              finish:
+                                reason: FINISH_REASON_UNSPECIFIED
+                                time: 1741589979
+                              reasoning:
+                                thinking: ""
+                              text:
+                                text: ""
+                              toolCall:
+                                id: ""
+                                input: ""
+                                name: ""
+                              toolResult:
+                                content: ""
+                                isError: true
+                                metadata: ""
+                                toolCallId: ""
+                        role: MESSAGE_ROLE_UNSPECIFIED
+                        sessionId: ""
+                        updatedAt: 1741589979
                 messageDeleted:
                     messageId: ""
                 messageUpdated:
-                    message: null
+                    message:
+                        createdAt: 1741589979
+                        finishedAt: 1741589979
+                        id: ""
+                        model: ""
+                        parts:
+                            - binary:
+                                base64Data: ""
+                                data: ""
+                                mimeType: ""
+                                path: ""
+                              finish:
+                                reason: FINISH_REASON_UNSPECIFIED
+                                time: 1741589979
+                              reasoning:
+                                thinking: ""
+                              text:
+                                text: ""
+                              toolCall:
+                                id: ""
+                                input: ""
+                                name: ""
+                              toolResult:
+                                content: ""
+                                isError: true
+                                metadata: ""
+                                toolCallId: ""
+                        role: MESSAGE_ROLE_UNSPECIFIED
+                        sessionId: ""
+                        updatedAt: 1741589979
             properties:
                 messageCreated:
                     $ref: '#/components/schemas/opencode.v1.MessageCreated'
