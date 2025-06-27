@@ -104,6 +104,10 @@ func (s *InMemorySessionStore) ListSessions(ctx context.Context, userID string, 
 		return []*orchestratorpb.Session{}, "", nil
 	}
 
+	if limit == 0 {
+		limit = 100 // Default limit if not specified
+	}
+
 	end := int(offsetInt) + int(limit)
 	if end > len(userSessions) {
 		end = len(userSessions)
