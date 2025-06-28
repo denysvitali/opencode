@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	goruntime "runtime"
 	"syscall"
 	"time"
 
@@ -22,7 +21,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -74,27 +72,9 @@ func runOrchestrator(*cobra.Command, []string) error {
 		return fmt.Errorf("failed to set up OTEL exporter: %w", err)
 	}
 
-	// Get process information automatically
-	executablePath, err := os.Executable()
-	if err != nil {
-		executablePath = "orchestrator"
-	}
-
 	provider := trace.NewTracerProvider(
 		trace.WithBatcher(exp),
-		trace.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceName("orchestrator"),
-			semconv.ServiceVersion("1.0.0"),
-			semconv.ServiceInstanceID("orchestrator-1"),
-			semconv.ProcessPID(os.Getpid()),
-			semconv.ProcessExecutableName(executablePath),
-			semconv.ProcessCommand(os.Args[0]),
-			semconv.ProcessCommandArgs(os.Args[1:]...),
-			semconv.ProcessOwner(os.Getenv("USER")),
-			semconv.ProcessRuntimeName("go"),
-			semconv.ProcessRuntimeVersion(fmt.Sprintf("go%s", goruntime.Version()[2:])),
-		)),
+		trace.WithResource(resource.Default()),
 	)
 	otel.SetTracerProvider(provider)
 	defer provider.Shutdown(ctx)
