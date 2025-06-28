@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	corev1 "k8s.io/api/core/v1"
@@ -88,10 +89,10 @@ func (k *KubernetesSessionStore) CreateSession(ctx context.Context, sessionReq *
 	now := timestamppb.Now()
 
 	// Generate session ID if not provided
-	sessionID := sessionReq.GetUserId() + "-" + fmt.Sprintf("%d", time.Now().Unix())
+	sessionID := uuid.New()
 
 	session := &orchestratorpb.Session{
-		Id:           sessionID,
+		Id:           sessionID.String(),
 		UserId:       sessionReq.UserId,
 		Name:         sessionReq.Name,
 		State:        orchestratorpb.SessionState_SESSION_STATE_CREATING,

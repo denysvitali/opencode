@@ -67,8 +67,8 @@ func (r *Runtime) CreateSession(ctx context.Context, session *orchestratorpb.Ses
 
 // GetSessionStatus returns the current status of a session
 func (r *Runtime) GetSessionStatus(ctx context.Context, sessionID string) (*orchestratorpb.SessionStatus, error) {
-	podName := fmt.Sprintf("opencode-session-%s", sessionID[:8])
-
+	podName := k8sName(sessionID)
+	pvcName := k8sName(sessionID)
 	pod, err := r.client.CoreV1().Pods(r.config.Namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod: %w", err)
@@ -77,7 +77,7 @@ func (r *Runtime) GetSessionStatus(ctx context.Context, sessionID string) (*orch
 	status := &orchestratorpb.SessionStatus{
 		PodName:          podName,
 		PodNamespace:     r.config.Namespace,
-		PvcName:          fmt.Sprintf("opencode-workspace-%s", sessionID[:8]),
+		PvcName:          pvcName,
 		InternalEndpoint: fmt.Sprintf("%s.%s.svc.cluster.local:8081", podName, r.config.Namespace),
 		Ready:            false,
 		Message:          string(pod.Status.Phase),
@@ -108,7 +108,7 @@ func (r *Runtime) DeleteSession(ctx context.Context, sessionID string) error {
 
 // WaitForSessionReady waits for a session to become ready
 func (r *Runtime) WaitForSessionReady(ctx context.Context, sessionID string) error {
-	podName := fmt.Sprintf("opencode-session-%s", sessionID[:8])
+	podName := k8sName(sessionID)
 	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 		pod, err := r.client.CoreV1().Pods(r.config.Namespace).Get(ctx, podName, metav1.GetOptions{})
 		if err != nil {
@@ -125,8 +125,7 @@ func (r *Runtime) WaitForSessionReady(ctx context.Context, sessionID string) err
 
 // GetSessionEndpoint returns the network endpoint for the session
 func (r *Runtime) GetSessionEndpoint(ctx context.Context, sessionID string) (string, error) {
-	podName := fmt.Sprintf("opencode-session-%s", sessionID[:8])
-	return fmt.Sprintf("%s.%s.svc.cluster.local:8081", podName, r.config.Namespace), nil
+	return fmt.Sprintf("%s.%s.svc.cluster.local:8081", k8sName(sessionID), r.config.Namespace), nil
 }
 
 // ListSessions returns all sessions managed by this runtime
@@ -172,11 +171,21 @@ func (r *Runtime) Close() error {
 	return nil
 }
 
-// Helper methods for pod and PVC management
+func trimTrailingDash(s string) string {
+	for len(s) > 0 && s[len(s)-1] == '-' {
+		s = s[:len(s)-1]
+	}
+	return s
+}
+
+func k8sName(sessionId string) string {
+	name := sessionId[:8]
+	return fmt.Sprintf("opencode-session-%s", trimTrailingDash(name))
+}
 
 func (r *Runtime) createPod(ctx context.Context, session *orchestratorpb.Session) error {
-	podName := fmt.Sprintf("opencode-session-%s", session.Id[:8])
-	pvcName := fmt.Sprintf("opencode-workspace-%s", session.Id[:8])
+	podName := k8sName(session.Id)
+	pvcName := k8sName(session.Id)
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -228,7 +237,7 @@ func (r *Runtime) createPod(ctx context.Context, session *orchestratorpb.Session
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: "/health",
-								Port: intstr.FromInt(8081),
+								Port: intstr.FromInt32(8081),
 							},
 						},
 						InitialDelaySeconds: 5,
@@ -238,7 +247,7 @@ func (r *Runtime) createPod(ctx context.Context, session *orchestratorpb.Session
 						ProbeHandler: corev1.ProbeHandler{
 							HTTPGet: &corev1.HTTPGetAction{
 								Path: "/health",
-								Port: intstr.FromInt(8081),
+								Port: intstr.FromInt32(8081),
 							},
 						},
 						InitialDelaySeconds: 15,
@@ -301,10 +310,9 @@ func (r *Runtime) deletePod(ctx context.Context, sessionID string) error {
 }
 
 func (r *Runtime) createPVC(ctx context.Context, session *orchestratorpb.Session) error {
-	pvcName := fmt.Sprintf("opencode-workspace-%s", session.Id)
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      pvcName,
+			Name:      k8sName(session.Id),
 			Namespace: r.config.Namespace,
 			Labels: map[string]string{
 				"app":        "opencode-session",
@@ -329,8 +337,9 @@ func (r *Runtime) createPVC(ctx context.Context, session *orchestratorpb.Session
 }
 
 func (r *Runtime) deletePVC(ctx context.Context, sessionID string) error {
-	pvcName := fmt.Sprintf("opencode-workspace-%s", sessionID[:8])
-	return r.client.CoreV1().PersistentVolumeClaims(r.config.Namespace).Delete(ctx, pvcName, metav1.DeleteOptions{})
+	return r.client.CoreV1().
+		PersistentVolumeClaims(r.config.Namespace).
+		Delete(ctx, k8sName(sessionID), metav1.DeleteOptions{})
 }
 
 func (r *Runtime) podPhaseToSessionState(phase corev1.PodPhase) orchestratorpb.SessionState {

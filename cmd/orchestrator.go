@@ -165,9 +165,14 @@ func runOrchestrator(*cobra.Command, []string) error {
 
 	httpServer := &http.Server{
 		Addr: fmt.Sprintf(":%d", httpPort),
-		Handler: otelhttp.NewHandler(corsHandler(gwMux), "grpc-gateway", otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
-			return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
-		})),
+		Handler: otelhttp.NewHandler(corsHandler(gwMux), "grpc-gateway",
+			otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+				return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+			}),
+			otelhttp.WithFilter(func(r *http.Request) bool {
+				return r.URL.Path != "/health"
+			}),
+		),
 	}
 
 	// Handle graceful shutdown
