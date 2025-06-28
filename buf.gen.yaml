@@ -9,6 +9,6 @@ plugins:
   - local: protoc-gen-grpc-gateway
     out: .
     opt: module=github.com/opencode-ai/opencode,allow_delete_body=true
-  - local: protoc-gen-openapiv2
+  - local: protoc-gen-openapiv3
     out: internal/proto
-    opt: allow_delete_body=true
+    opt: paths=source_relative

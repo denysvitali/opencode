@@ -42,7 +42,7 @@ func (s *OpenCodeServer) Health(ctx context.Context, req *pb.HealthRequest) (*pb
 	}, nil
 }
 
-// Get current session info (auto-created if none exists)
+// GetSession gets the current session info (auto-created if none exists)
 func (s *OpenCodeServer) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*pb.GetSessionResponse, error) {
 	// In single-session mode, auto-create session if none exists
 	if s.currentSessionID == "" {
@@ -68,7 +68,7 @@ func (s *OpenCodeServer) GetSession(ctx context.Context, req *pb.GetSessionReque
 	}, nil
 }
 
-// Reset/clear the current session
+// ResetSession Resets the current session
 func (s *OpenCodeServer) ResetSession(ctx context.Context, req *pb.ResetSessionRequest) (*pb.ResetSessionResponse, error) {
 	if s.currentSessionID != "" {
 		// Delete current session
@@ -103,10 +103,10 @@ func (s *OpenCodeServer) ResetSession(ctx context.Context, req *pb.ResetSessionR
 func (s *OpenCodeServer) GetSessionStats(ctx context.Context, req *pb.GetSessionStatsRequest) (*pb.GetSessionStatsResponse, error) {
 	if s.currentSessionID == "" {
 		return &pb.GetSessionStatsResponse{
-			TotalMessages: 0,
-			UserMessages: 0,
+			TotalMessages:     0,
+			UserMessages:      0,
 			AssistantMessages: 0,
-			ToolMessages: 0,
+			ToolMessages:      0,
 		}, nil
 	}
 
@@ -116,15 +116,15 @@ func (s *OpenCodeServer) GetSessionStats(ctx context.Context, req *pb.GetSession
 	}
 
 	return &pb.GetSessionStatsResponse{
-		TotalMessages: session.MessageCount,
-		UserMessages: 0, // TODO: Count by role
+		TotalMessages:     session.MessageCount,
+		UserMessages:      0, // TODO: Count by role
 		AssistantMessages: 0,
-		ToolMessages: 0,
-		PromptTokens: session.PromptTokens,
-		CompletionTokens: session.CompletionTokens,
-		TotalCost: session.Cost,
-		LastActivity: timestamppb.New(time.Unix(session.UpdatedAt, 0)),
-		CurrentModel: "", // TODO: Get from agent
+		ToolMessages:      0,
+		PromptTokens:      session.PromptTokens,
+		CompletionTokens:  session.CompletionTokens,
+		TotalCost:         session.Cost,
+		LastActivity:      timestamppb.New(time.Unix(session.UpdatedAt, 0)),
+		CurrentModel:      "", // TODO: Get from agent
 	}, nil
 }
 
@@ -270,10 +270,10 @@ func (s *OpenCodeServer) ListMessages(ctx context.Context, req *pb.ListMessagesR
 	return &pb.ListMessagesResponse{
 		Messages: protoMessages,
 		Pagination: &pb.PaginationResponse{
-			Total:    total,
-			Limit:    limit,
-			Offset:   offset,
-			HasMore:  end < total,
+			Total:   total,
+			Limit:   limit,
+			Offset:  offset,
+			HasMore: end < total,
 		},
 	}, nil
 }
