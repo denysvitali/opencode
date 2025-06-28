@@ -9,11 +9,20 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	goruntime "runtime"
 	"syscall"
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/contrib/exporters/autoexport"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/propagators/autoprop"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -58,7 +67,39 @@ func init() {
 
 func runOrchestrator(*cobra.Command, []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
+	// OTEL autoexport setup (console or collector, depending on env)
+	exp, err := autoexport.NewSpanExporter(ctx)
+	if err != nil {
+		cancel()
+		return fmt.Errorf("failed to set up OTEL exporter: %w", err)
+	}
+
+	// Get process information automatically
+	executablePath, err := os.Executable()
+	if err != nil {
+		executablePath = "orchestrator"
+	}
+
+	provider := trace.NewTracerProvider(
+		trace.WithBatcher(exp),
+		trace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceName("orchestrator"),
+			semconv.ServiceVersion("1.0.0"),
+			semconv.ServiceInstanceID("orchestrator-1"),
+			semconv.ProcessPID(os.Getpid()),
+			semconv.ProcessExecutableName(executablePath),
+			semconv.ProcessCommand(os.Args[0]),
+			semconv.ProcessCommandArgs(os.Args[1:]...),
+			semconv.ProcessOwner(os.Getenv("USER")),
+			semconv.ProcessRuntimeName("go"),
+			semconv.ProcessRuntimeVersion(fmt.Sprintf("go%s", goruntime.Version()[2:])),
+		)),
+	)
+	otel.SetTracerProvider(provider)
+	defer provider.Shutdown(ctx)
 	defer cancel()
+	otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
 
 	// Create Kubernetes runtime configuration
 	kubeConfig := &models.KubernetesConfig{
@@ -87,7 +128,9 @@ func runOrchestrator(*cobra.Command, []string) error {
 	}
 
 	// Start gRPC server
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 	orchestratorpb.RegisterOrchestratorServiceServer(grpcServer, orchestratorSvc)
 	reflection.Register(grpcServer)
 
@@ -98,8 +141,22 @@ func runOrchestrator(*cobra.Command, []string) error {
 	}
 
 	// Start HTTP gateway with CORS support
-	gwMux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	gwMux := runtime.NewServeMux(
+		runtime.WithIncomingHeaderMatcher(func(key string) (string, bool) {
+			// Allow OpenTelemetry trace headers to pass through
+			switch key {
+			case "traceparent", "tracestate", "x-trace-id", "x-span-id":
+				return key, true
+			default:
+				return runtime.DefaultHeaderMatcher(key)
+			}
+		}),
+	)
+	// Custom gRPC-Gateway otel middleware with client instrumentation
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	}
 	if err := orchestratorpb.RegisterOrchestratorServiceHandlerFromEndpoint(ctx, gwMux, grpcAddr, opts); err != nil {
 		return fmt.Errorf("failed to register gateway: %w", err)
 	}
@@ -127,8 +184,10 @@ func runOrchestrator(*cobra.Command, []string) error {
 	}
 
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", httpPort),
-		Handler: corsHandler(gwMux),
+		Addr: fmt.Sprintf(":%d", httpPort),
+		Handler: otelhttp.NewHandler(corsHandler(gwMux), "grpc-gateway", otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+		})),
 	}
 
 	// Handle graceful shutdown

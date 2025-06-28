@@ -6,16 +6,20 @@ import (
 	"log"
 	"time"
 
+	"github.com/opencode-ai/opencode/internal/orchestrator/models"
+	"github.com/opencode-ai/opencode/internal/orchestrator/runtime/kubernetes"
+	"github.com/opencode-ai/opencode/internal/orchestrator/session"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/opencode-ai/opencode/internal/orchestrator/models"
-	"github.com/opencode-ai/opencode/internal/orchestrator/runtime/kubernetes"
-	"github.com/opencode-ai/opencode/internal/orchestrator/session"
 	orchestratorpb "github.com/opencode-ai/opencode/internal/proto/orchestrator/v1"
 )
+
+const tracerName = "github.com/opencode-ai/opencode/internal/orchestrator"
 
 // Service implements the OrchestratorService
 type Service struct {
@@ -98,16 +102,27 @@ func NewServiceWithComponents(config *models.Config, sessionManager models.Sessi
 
 // Health implements the health check
 func (s *Service) Health(ctx context.Context, req *orchestratorpb.HealthRequest) (*orchestratorpb.HealthResponse, error) {
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "Health")
+	defer span.End()
+	
 	count, _ := s.sessionManager.CountSessions(ctx, "")
 	runtimeHealthy := true
 	if err := s.runtime.HealthCheck(ctx); err != nil {
 		runtimeHealthy = false
+		span.RecordError(err)
 	}
 
 	healthStatus := orchestratorpb.HealthResponse_SERVING
 	if !runtimeHealthy {
 		healthStatus = orchestratorpb.HealthResponse_NOT_SERVING
 	}
+
+	span.SetAttributes(
+		attribute.String("runtime.type", s.config.RuntimeConfig.GetType()),
+		attribute.Int64("sessions.active", int64(count)),
+		attribute.Bool("runtime.healthy", runtimeHealthy),
+		attribute.String("health.status", healthStatus.String()),
+	)
 
 	return &orchestratorpb.HealthResponse{
 		Status:    healthStatus,
@@ -123,6 +138,8 @@ func (s *Service) Health(ctx context.Context, req *orchestratorpb.HealthRequest)
 
 // CreateSession creates a new session
 func (s *Service) CreateSession(ctx context.Context, req *orchestratorpb.CreateSessionRequest) (*orchestratorpb.CreateSessionResponse, error) {
+	ctx, span := otel.Tracer("orchestrator").Start(ctx, "CreateSession")
+	defer span.End()
 	if req.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
@@ -174,6 +191,8 @@ func (s *Service) CreateSession(ctx context.Context, req *orchestratorpb.CreateS
 
 // GetSession retrieves session information
 func (s *Service) GetSession(ctx context.Context, req *orchestratorpb.GetSessionRequest) (*orchestratorpb.GetSessionResponse, error) {
+	ctx, span := otel.Tracer("orchestrator").Start(ctx, "GetSession")
+	defer span.End()
 	if req.SessionId == "" {
 		return nil, status.Error(codes.InvalidArgument, "session_id is required")
 	}
@@ -198,10 +217,26 @@ func (s *Service) GetSession(ctx context.Context, req *orchestratorpb.GetSession
 
 // ListSessions lists user sessions
 func (s *Service) ListSessions(ctx context.Context, req *orchestratorpb.ListSessionsRequest) (*orchestratorpb.ListSessionsResponse, error) {
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "ListSessions")
+	defer span.End()
+	
+	span.SetAttributes(
+		attribute.String("request.user_id", req.UserId),
+		attribute.Int64("request.page_size", int64(req.PageSize)),
+		attribute.String("request.page_token", req.PageToken),
+		attribute.String("request.filter", req.Filter),
+	)
+	
 	sessions, nextToken, err := s.sessionManager.ListSessions(ctx, req.UserId, req.PageSize, req.PageToken)
 	if err != nil {
+		span.RecordError(err)
 		return nil, status.Errorf(codes.Internal, "failed to list sessions: %v", err)
 	}
+
+	span.SetAttributes(
+		attribute.Int64("response.session_count", int64(len(sessions))),
+		attribute.String("response.next_page_token", nextToken),
+	)
 
 	return &orchestratorpb.ListSessionsResponse{
 		Sessions:      sessions,
@@ -212,6 +247,8 @@ func (s *Service) ListSessions(ctx context.Context, req *orchestratorpb.ListSess
 
 // DeleteSession deletes a session
 func (s *Service) DeleteSession(ctx context.Context, req *orchestratorpb.DeleteSessionRequest) (*emptypb.Empty, error) {
+	ctx, span := otel.Tracer("orchestrator").Start(ctx, "DeleteSession")
+	defer span.End()
 	if req.SessionId == "" {
 		return nil, status.Error(codes.InvalidArgument, "session_id is required")
 	}
@@ -242,6 +279,8 @@ func (s *Service) DeleteSession(ctx context.Context, req *orchestratorpb.DeleteS
 
 // ProxyHTTP proxies HTTP requests to sessions
 func (s *Service) ProxyHTTP(ctx context.Context, req *orchestratorpb.ProxyHTTPRequest) (*orchestratorpb.ProxyHTTPResponse, error) {
+	ctx, span := otel.Tracer("orchestrator").Start(ctx, "ProxyHTTP")
+	defer span.End()
 	if req.SessionId == "" {
 		return nil, status.Error(codes.InvalidArgument, "session_id is required")
 	}
