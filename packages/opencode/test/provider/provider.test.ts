@@ -5,6 +5,7 @@ import { tmpdir } from "../fixture/fixture"
 import { Instance } from "../../src/project/instance"
 import { Provider } from "../../src/provider/provider"
 import { Env } from "../../src/env"
+import { ModelsDev } from "../../src/provider/models"
 
 test("provider loaded from env variable", async () => {
   await using tmp = await tmpdir({
@@ -2124,6 +2125,104 @@ test("custom model with variants enabled and disabled", async () => {
       expect(model.variants!["low"].disabled).toBeUndefined()
       expect(model.variants!["medium"].disabled).toBeUndefined()
       expect(model.variants!["custom"].disabled).toBeUndefined()
+    },
+  })
+})
+
+test("config override for existing model does not inherit catalog status", async () => {
+  const models = await ModelsDev.get()
+  const match = Object.entries(models)
+    .flatMap(([providerID, provider]) =>
+      Object.entries(provider.models).map(([modelID, model]) => ({
+        providerID,
+        modelID,
+        status: model.status,
+      })),
+    )
+    .find((item) => item.status === "alpha" || item.status === "deprecated")
+  expect(match).toBeDefined()
+  const providerID = match!.providerID
+  const modelID = match!.modelID
+
+  await using tmp = await tmpdir({
+    init: async (dir) => {
+      await Bun.write(
+        path.join(dir, "opencode.json"),
+        JSON.stringify({
+          $schema: "https://opencode.ai/config.json",
+          provider: {
+            [providerID]: {
+              models: {
+                [modelID]: {
+                  id: modelID,
+                  name: "Override model",
+                  cost: {
+                    input: 0,
+                    output: 0,
+                  },
+                  limit: {
+                    context: 200000,
+                    output: 50000,
+                  },
+                },
+              },
+            },
+          },
+        }),
+      )
+    },
+  })
+
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const providers = await Provider.list()
+      expect(providers[providerID]).toBeDefined()
+      expect(providers[providerID].models[modelID]).toBeDefined()
+      expect(providers[providerID].models[modelID].status).toBe("active")
+    },
+  })
+})
+
+test("config model with explicit alpha status remains filtered", async () => {
+  const modelID = "alpha-override-test"
+
+  await using tmp = await tmpdir({
+    init: async (dir) => {
+      await Bun.write(
+        path.join(dir, "opencode.json"),
+        JSON.stringify({
+          $schema: "https://opencode.ai/config.json",
+          provider: {
+            openrouter: {
+              models: {
+                [modelID]: {
+                  id: modelID,
+                  status: "alpha",
+                  name: "Alpha model",
+                  cost: {
+                    input: 0,
+                    output: 0,
+                  },
+                  limit: {
+                    context: 200000,
+                    output: 50000,
+                  },
+                },
+              },
+            },
+          },
+        }),
+      )
+    },
+  })
+
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const providers = await Provider.list()
+      expect(providers["openrouter"]).toBeDefined()
+      expect(providers["openrouter"].models[modelID]).toBeUndefined()
     },
   })
 })

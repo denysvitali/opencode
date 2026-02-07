@@ -7,6 +7,7 @@ import { useDialog } from "@tui/ui/dialog"
 import { createDialogProviderOptions, DialogProvider } from "./dialog-provider"
 import { useKeybind } from "../context/keybind"
 import * as fuzzysort from "fuzzysort"
+import { DialogAddCustomModel } from "./dialog-add-custom-model"
 
 export function useConnected() {
   const sync = useSync()
@@ -122,7 +123,7 @@ export function DialogModel(props: { providerID?: string }) {
           provider.models,
           entries(),
           filter(([_, info]) => info.status !== "deprecated"),
-          filter(([_, info]) => (props.providerID ? info.providerID === props.providerID : true)),
+          filter(() => (props.providerID ? provider.id === props.providerID : true)),
           map(([model, info]) => {
             const value = {
               providerID: provider.id,
@@ -220,6 +221,13 @@ export function DialogModel(props: { providerID?: string }) {
           disabled: !connected(),
           onTrigger: (option) => {
             local.model.toggleFavorite(option.value as { providerID: string; modelID: string })
+          },
+        },
+        {
+          keybind: { name: "n", ctrl: true, meta: false, shift: false, super: false, leader: false },
+          title: "Add custom model",
+          onTrigger() {
+            dialog.replace(() => <DialogAddCustomModel />)
           },
         },
       ]}

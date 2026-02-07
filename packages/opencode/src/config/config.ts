@@ -1195,7 +1195,6 @@ export namespace Config {
   export const global = lazy(async () => {
     let result: Info = pipe(
       {},
-      mergeDeep(await loadFile(path.join(Global.Path.config, "config.json"))),
       mergeDeep(await loadFile(path.join(Global.Path.config, "opencode.json"))),
       mergeDeep(await loadFile(path.join(Global.Path.config, "opencode.jsonc"))),
     )
@@ -1212,7 +1211,7 @@ export namespace Config {
           if (provider && model) result.model = `${provider}/${model}`
           result["$schema"] = "https://opencode.ai/config.json"
           result = mergeDeep(result, rest)
-          await Bun.write(path.join(Global.Path.config, "config.json"), JSON.stringify(result, null, 2))
+          await Bun.write(globalConfigFile(), JSON.stringify(result, null, 2))
           await fs.unlink(legacy)
         })
         .catch(() => {})
@@ -1360,16 +1359,23 @@ export namespace Config {
   }
 
   export async function update(config: Info) {
-    const filepath = path.join(Instance.directory, "config.json")
+    const filepath = projectConfigFile()
     const existing = await loadFile(filepath)
     await Bun.write(filepath, JSON.stringify(mergeDeep(existing, config), null, 2))
+    ModelsDev.Data.reset()
     await Instance.dispose()
   }
 
   function globalConfigFile() {
-    const candidates = ["opencode.jsonc", "opencode.json", "config.json"].map((file) =>
-      path.join(Global.Path.config, file),
-    )
+    const candidates = ["opencode.jsonc", "opencode.json"].map((file) => path.join(Global.Path.config, file))
+    for (const file of candidates) {
+      if (existsSync(file)) return file
+    }
+    return candidates[0]
+  }
+
+  function projectConfigFile() {
+    const candidates = ["opencode.jsonc", "opencode.json"].map((file) => path.join(Instance.directory, file))
     for (const file of candidates) {
       if (existsSync(file)) return file
     }

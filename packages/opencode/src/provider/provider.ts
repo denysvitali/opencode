@@ -778,7 +778,9 @@ export namespace Provider {
               "@ai-sdk/openai-compatible",
             url: provider?.api ?? existingModel?.api.url ?? modelsDev[providerID]?.api,
           },
-          status: model.status ?? existingModel?.status ?? "active",
+          // Config-defined models are authoritative and should not inherit
+          // catalog status flags (eg alpha/deprecated) unless explicitly set.
+          status: model.status ?? "active",
           name,
           providerID,
           capabilities: {
@@ -978,6 +980,64 @@ export namespace Provider {
     return state().then((state) => state.providers)
   }
 
+  function normalizeApiKey(options: Record<string, any>, providerID: string) {
+    const value = options["apiKey"]
+    if (typeof value !== "string") return
+    const trimmed = value.trim()
+    if (!trimmed.toLowerCase().startsWith("bearer ")) return
+    options["apiKey"] = trimmed.slice(7).trim()
+    log.warn("provider apiKey should not include Bearer prefix", {
+      providerID,
+    })
+  }
+
+  function normalizeHeaders(input: unknown, providerID: string) {
+    if (!input) return {}
+    if (input instanceof Headers) return Object.fromEntries(input.entries())
+    if (Array.isArray(input)) {
+      if (input.length === 2 && typeof input[0] === "string" && typeof input[1] === "string") {
+        return {
+          [input[0]]: input[1],
+        }
+      }
+      const tuples = input.filter(
+        (item): item is [string, string] =>
+          Array.isArray(item) && item.length >= 2 && typeof item[0] === "string" && typeof item[1] === "string",
+      )
+      if (tuples.length === input.length) return Object.fromEntries(tuples)
+      log.warn("ignoring invalid provider headers", {
+        providerID,
+      })
+      return {}
+    }
+    if (typeof input === "object") {
+      const entries = Object.entries(input).filter((entry): entry is [string, string] => typeof entry[1] === "string")
+      return Object.fromEntries(entries)
+    }
+    log.warn("ignoring invalid provider headers", {
+      providerID,
+    })
+    return {}
+  }
+
+  function normalizeAuth(options: Record<string, any>, providerID: string) {
+    normalizeApiKey(options, providerID)
+    const headers = normalizeHeaders(options["headers"], providerID)
+    const auth = headers["Authorization"] ?? headers["authorization"]
+    if (options["apiKey"] === undefined && typeof auth === "string") {
+      const trimmed = auth.trim()
+      if (trimmed.toLowerCase().startsWith("bearer ")) {
+        options["apiKey"] = trimmed.slice(7).trim()
+        delete headers["Authorization"]
+        delete headers["authorization"]
+        log.warn("provider auth should use options.apiKey instead of headers.Authorization", {
+          providerID,
+        })
+      }
+    }
+    options["headers"] = headers
+  }
+
   async function getSDK(model: Model) {
     try {
       using _ = log.time("getSDK", {
@@ -986,6 +1046,7 @@ export namespace Provider {
       const s = await state()
       const provider = s.providers[model.providerID]
       const options = { ...provider.options }
+      normalizeAuth(options, model.providerID)
 
       if (model.api.npm.includes("@ai-sdk/openai-compatible") && options["includeUsage"] !== false) {
         options["includeUsage"] = true

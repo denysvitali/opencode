@@ -36,6 +36,18 @@ export namespace Auth {
 
   const filepath = path.join(Global.Path.data, "auth.json")
 
+  function sanitizeApiKey(input: string) {
+    return input.replace(/[\r\n]+/g, "").trim()
+  }
+
+  function sanitizeInfo(info: Info): Info {
+    if (info.type !== "api") return info
+    return {
+      ...info,
+      key: sanitizeApiKey(info.key),
+    }
+  }
+
   export async function get(providerID: string) {
     const auth = await all()
     return auth[providerID]
@@ -44,21 +56,25 @@ export namespace Auth {
   export async function all(): Promise<Record<string, Info>> {
     const file = Bun.file(filepath)
     const data = await file.json().catch(() => ({}) as Record<string, unknown>)
-    return Object.entries(data).reduce(
-      (acc, [key, value]) => {
-        const parsed = Info.safeParse(value)
-        if (!parsed.success) return acc
-        acc[key] = parsed.data
-        return acc
-      },
-      {} as Record<string, Info>,
-    )
+    let changed = false
+    const result = Object.entries(data).reduce((acc, [key, value]) => {
+      const parsed = Info.safeParse(value)
+      if (!parsed.success) return acc
+      const next = sanitizeInfo(parsed.data)
+      if (!changed && JSON.stringify(next) !== JSON.stringify(parsed.data)) changed = true
+      acc[key] = next
+      return acc
+    }, {} as Record<string, Info>)
+    if (changed) {
+      await Bun.write(file, JSON.stringify(result, null, 2), { mode: 0o600 })
+    }
+    return result
   }
 
   export async function set(key: string, info: Info) {
     const file = Bun.file(filepath)
     const data = await all()
-    await Bun.write(file, JSON.stringify({ ...data, [key]: info }, null, 2), { mode: 0o600 })
+    await Bun.write(file, JSON.stringify({ ...data, [key]: sanitizeInfo(info) }, null, 2), { mode: 0o600 })
   }
 
   export async function remove(key: string) {
