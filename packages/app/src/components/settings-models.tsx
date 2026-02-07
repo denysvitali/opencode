@@ -4,17 +4,40 @@ import { Switch } from "@opencode-ai/ui/switch"
 import { Icon } from "@opencode-ai/ui/icon"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { TextField } from "@opencode-ai/ui/text-field"
+import { Button } from "@opencode-ai/ui/button"
+import { Tag } from "@opencode-ai/ui/tag"
 import type { IconName } from "@opencode-ai/ui/icons/provider"
 import { type Component, For, Show } from "solid-js"
+import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLanguage } from "@/context/language"
 import { useModels } from "@/context/models"
 import { popularProviders } from "@/hooks/use-providers"
+import { DialogAddCustomModel } from "./dialog-add-custom-model"
 
 type ModelItem = ReturnType<ReturnType<typeof useModels>["list"]>[number]
 
 export const SettingsModels: Component = () => {
   const language = useLanguage()
   const models = useModels()
+  const dialog = useDialog()
+
+  const handleAddCustom = () => {
+    dialog.show(() => <DialogAddCustomModel />)
+  }
+
+  const handleEditCustom = (index: number) => {
+    const custom = models.custom.list()[index]
+    if (!custom) return
+    dialog.show(() => <DialogAddCustomModel edit={{ ...custom, index }} />)
+  }
+
+  const handleDeleteCustom = (index: number) => {
+    const custom = models.custom.list()[index]
+    if (!custom) return
+    if (confirm(language.t("model.custom.delete.confirm", { name: custom.name }))) {
+      models.custom.remove(index)
+    }
+  }
 
   const list = useFilteredList<ModelItem>({
     items: (_filter) => models.list(),
@@ -125,6 +148,62 @@ export const SettingsModels: Component = () => {
           </Show>
         </Show>
       </div>
+
+      <Show when={models.custom.list().length > 0}>
+        <div class="flex flex-col gap-4 max-w-[720px]">
+          <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-1">
+              <h3 class="text-14-medium text-text-strong">{language.t("model.custom.section.title")}</h3>
+              <p class="text-12-regular text-text-weak">{language.t("model.custom.section.description")}</p>
+            </div>
+            <Button variant="ghost" size="small" icon="plus-small" onClick={handleAddCustom}>
+              {language.t("model.custom.add.button")}
+            </Button>
+          </div>
+          <div class="bg-surface-raised-base px-4 rounded-lg">
+            <For each={models.custom.list()}>
+              {(item, index) => (
+                <div class="flex flex-wrap items-center justify-between gap-4 py-3 border-b border-border-weak-base last:border-none">
+                  <div class="min-w-0 flex items-center gap-2">
+                    <span class="text-14-regular text-text-strong truncate block">{item.name}</span>
+                    <Tag>{language.t("model.custom.tag")}</Tag>
+                  </div>
+                  <div class="flex-shrink-0 flex items-center gap-2">
+                    <IconButton
+                      icon="pencil-line"
+                      variant="ghost"
+                      size="small"
+                      onClick={() => handleEditCustom(index())}
+                      aria-label={language.t("model.custom.edit.button")}
+                    />
+                    <IconButton
+                      icon="trash"
+                      variant="ghost"
+                      size="small"
+                      onClick={() => handleDeleteCustom(index())}
+                      aria-label={language.t("model.custom.delete.button")}
+                    />
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+        </div>
+      </Show>
+
+      <Show when={models.custom.list().length === 0}>
+        <div class="flex flex-col gap-4 max-w-[720px]">
+          <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-1">
+              <h3 class="text-14-medium text-text-strong">{language.t("model.custom.section.title")}</h3>
+              <p class="text-12-regular text-text-weak">{language.t("model.custom.section.description")}</p>
+            </div>
+            <Button variant="ghost" size="small" icon="plus-small" onClick={handleAddCustom}>
+              {language.t("model.custom.add.button")}
+            </Button>
+          </div>
+        </div>
+      </Show>
     </div>
   )
 }

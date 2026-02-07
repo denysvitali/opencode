@@ -16,25 +16,6 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
     const sync = useSync()
     const providers = useProviders()
 
-    function isModelValid(model: ModelKey) {
-      const provider = providers.all().find((x) => x.id === model.providerID)
-      return (
-        !!provider?.models[model.modelID] &&
-        providers
-          .connected()
-          .map((p) => p.id)
-          .includes(model.providerID)
-      )
-    }
-
-    function getFirstValidModel(...modelFns: (() => ModelKey | undefined)[]) {
-      for (const modelFn of modelFns) {
-        const model = modelFn()
-        if (!model) continue
-        if (isModelValid(model)) return model
-      }
-    }
-
     const agent = (() => {
       const list = createMemo(() => sync.data.agent.filter((x) => x.mode !== "subagent" && !x.hidden))
       const [store, setStore] = createStore<{
@@ -90,6 +71,31 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
       }>({
         model: {},
       })
+
+      const isModelValid = (modelKey: ModelKey) => {
+        const provider = providers.all().find((x) => x.id === modelKey.providerID)
+        const isConnected = providers
+          .connected()
+          .map((p) => p.id)
+          .includes(modelKey.providerID)
+        if (!isConnected) return false
+        // Check if it's an official model
+        if (provider?.models[modelKey.modelID]) return true
+        // Check if it's a custom model (modelID starts with "custom:")
+        if (modelKey.modelID.startsWith("custom:")) {
+          const customId = modelKey.modelID.slice(7) // Remove "custom:" prefix
+          return models.custom.list().some((c) => c.id === customId && c.providerID === modelKey.providerID)
+        }
+        return false
+      }
+
+      function getFirstValidModel(...modelFns: (() => ModelKey | undefined)[]) {
+        for (const modelFn of modelFns) {
+          const modelKey = modelFn()
+          if (!modelKey) continue
+          if (isModelValid(modelKey)) return modelKey
+        }
+      }
 
       const fallbackModel = createMemo<ModelKey | undefined>(() => {
         if (sync.data.config.model) {
@@ -168,20 +174,20 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         recent,
         list: models.list,
         cycle,
-        set(model: ModelKey | undefined, options?: { recent?: boolean }) {
+        set(modelKey: ModelKey | undefined, options?: { recent?: boolean }) {
           batch(() => {
             const currentAgent = agent.current()
-            const next = model ?? fallbackModel()
+            const next = modelKey ?? fallbackModel()
             if (currentAgent) setEphemeral("model", currentAgent.name, next)
-            if (model) models.setVisibility(model, true)
-            if (options?.recent && model) models.recent.push(model)
+            if (modelKey) models.setVisibility(modelKey, true)
+            if (options?.recent && modelKey) models.recent.push(modelKey)
           })
         },
-        visible(model: ModelKey) {
-          return models.visible(model)
+        visible(modelKey: ModelKey) {
+          return models.visible(modelKey)
         },
-        setVisibility(model: ModelKey, visible: boolean) {
-          models.setVisibility(model, visible)
+        setVisibility(modelKey: ModelKey, visible: boolean) {
+          models.setVisibility(modelKey, visible)
         },
         variant: {
           current() {
@@ -192,7 +198,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           list() {
             const m = current()
             if (!m) return []
-            if (!m.variants) return []
+            if (!("variants" in m) || !m.variants) return []
             return Object.keys(m.variants)
           },
           set(value: string | undefined) {

@@ -10,10 +10,28 @@ export type ModelKey = { providerID: string; modelID: string }
 
 type Visibility = "show" | "hide"
 type User = ModelKey & { visibility: Visibility; favorite?: boolean }
+
+export type CustomModel = {
+  id: string
+  providerID: string
+  name: string
+  cost: {
+    input: number
+    output: number
+    cache_read?: number
+    cache_write?: number
+  }
+  limit: {
+    context: number
+    output?: number
+  }
+}
+
 type Store = {
   user: User[]
   recent: ModelKey[]
   variant?: Record<string, string | undefined>
+  custom: CustomModel[]
 }
 
 export const { use: useModels, provider: ModelsProvider } = createSimpleContext({
@@ -27,6 +45,7 @@ export const { use: useModels, provider: ModelsProvider } = createSimpleContext(
         user: [],
         recent: [],
         variant: {},
+        custom: [],
       }),
     )
 
@@ -69,13 +88,34 @@ export const { use: useModels, provider: ModelsProvider } = createSimpleContext(
       return map
     })
 
-    const list = createMemo(() =>
-      available().map((m) => ({
+    const customList = createMemo(() =>
+      store.custom.map((custom) => {
+        const provider = providers.all().find((p) => p.id === custom.providerID)
+        return {
+          id: `custom:${custom.id}`,
+          name: custom.name,
+          provider: provider ?? { id: custom.providerID, name: custom.providerID },
+          cost: custom.cost,
+          limit: custom.limit,
+          release_date: new Date().toISOString(),
+          attachment: false,
+          reasoning: false,
+          temperature: true,
+          tool_call: false,
+          custom: true,
+          customData: custom,
+        }
+      }),
+    )
+
+    const list = createMemo(() => {
+      const official = available().map((m) => ({
         ...m,
         name: m.name.replace("(latest)", "").trim(),
         latest: m.name.includes("(latest)"),
-      })),
-    )
+      }))
+      return [...official, ...customList()]
+    })
 
     const find = (key: ModelKey) => list().find((m) => m.id === key.modelID && m.provider.id === key.providerID)
 
@@ -95,6 +135,7 @@ export const { use: useModels, provider: ModelsProvider } = createSimpleContext(
       if (state === "show") return true
       if (latestSet().has(key)) return true
       const m = find(model)
+      if (m && "custom" in m && m.custom) return true
       if (!m?.release_date || !DateTime.fromISO(m.release_date).isValid) return true
       return false
     }
@@ -121,6 +162,35 @@ export const { use: useModels, provider: ModelsProvider } = createSimpleContext(
       setStore("variant", key, value)
     }
 
+    const addCustom = (model: CustomModel) => {
+      setStore("custom", store.custom.length, model)
+    }
+
+    const updateCustom = (index: number, model: CustomModel) => {
+      setStore("custom", index, model)
+    }
+
+    const removeCustom = (index: number) => {
+      const custom = store.custom[index]
+      if (!custom) return
+      const modelKey = { providerID: custom.providerID, modelID: `custom:${custom.id}` }
+      setStore(
+        "custom",
+        store.custom.filter((_, i) => i !== index),
+      )
+      setStore(
+        "user",
+        store.user.filter((u) => !(u.providerID === modelKey.providerID && u.modelID === modelKey.modelID)),
+      )
+      setStore(
+        "recent",
+        store.recent.filter((r) => !(r.providerID === modelKey.providerID && r.modelID === modelKey.modelID)),
+      )
+    }
+
+    const findCustomIndex = (id: string, providerID: string) =>
+      store.custom.findIndex((c) => c.id === id && c.providerID === providerID)
+
     return {
       ready,
       list,
@@ -134,6 +204,13 @@ export const { use: useModels, provider: ModelsProvider } = createSimpleContext(
       variant: {
         get: getVariant,
         set: setVariant,
+      },
+      custom: {
+        list: createMemo(() => store.custom),
+        add: addCustom,
+        update: updateCustom,
+        remove: removeCustom,
+        findIndex: findCustomIndex,
       },
     }
   },

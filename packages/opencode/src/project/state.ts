@@ -8,18 +8,42 @@ export namespace State {
 
   const log = Log.create({ service: "state" })
   const recordsByKey = new Map<string, Map<any, Entry>>()
+  const pendingByKey = new Map<string, Map<any, Promise<any>>>()
 
   export function create<S>(root: () => string, init: () => S, dispose?: (state: Awaited<S>) => Promise<void>) {
     return () => {
       const key = root()
+
       let entries = recordsByKey.get(key)
       if (!entries) {
         entries = new Map<string, Entry>()
         recordsByKey.set(key, entries)
       }
+
+      let pending = pendingByKey.get(key)
+      if (!pending) {
+        pending = new Map<any, Promise<any>>()
+        pendingByKey.set(key, pending)
+      }
+
+      const existingPending = pending.get(init)
+      if (existingPending) return existingPending as S
+
       const exists = entries.get(init)
       if (exists) return exists.state as S
+
       const state = init()
+      if (state instanceof Promise) {
+        pending.set(init, state)
+        state
+          .then(() => {
+            pending.delete(init)
+          })
+          .catch(() => {
+            pending.delete(init)
+          })
+      }
+
       entries.set(init, {
         state,
         dispose,
@@ -63,6 +87,7 @@ export namespace State {
 
     entries.clear()
     recordsByKey.delete(key)
+    pendingByKey.delete(key)
 
     disposalFinished = true
     log.info("state disposal completed", { key })

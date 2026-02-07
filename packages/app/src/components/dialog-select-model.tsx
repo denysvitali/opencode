@@ -12,6 +12,7 @@ import { List } from "@opencode-ai/ui/list"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { DialogSelectProvider } from "./dialog-select-provider"
 import { DialogManageModels } from "./dialog-manage-models"
+import { DialogAddCustomModel } from "./dialog-add-custom-model"
 import { ModelTooltip } from "./model-tooltip"
 import { useLanguage } from "@/context/language"
 
@@ -57,7 +58,7 @@ const ModelList: Component<{
           value={
             <ModelTooltip
               model={item}
-              latest={item.latest}
+              latest={(item as any).latest}
               free={item.provider.id === "opencode" && (!item.cost || item.cost.input === 0)}
             />
           }
@@ -78,8 +79,11 @@ const ModelList: Component<{
           <Show when={i.provider.id === "opencode" && (!i.cost || i.cost?.input === 0)}>
             <Tag>{language.t("model.tag.free")}</Tag>
           </Show>
-          <Show when={i.latest}>
+          <Show when={(i as any).latest}>
             <Tag>{language.t("model.tag.latest")}</Tag>
+          </Show>
+          <Show when={(i as any).custom}>
+            <Tag>{language.t("model.custom.tag")}</Tag>
           </Show>
         </div>
       )}
@@ -116,6 +120,11 @@ export function ModelSelectorPopover(props: {
   const handleConnectProvider = () => {
     setStore("open", false)
     dialog.show(() => <DialogSelectProvider />)
+  }
+
+  const handleAddCustomModel = () => {
+    setStore("open", false)
+    dialog.show(() => <DialogAddCustomModel />)
   }
   const language = useLanguage()
 
@@ -231,6 +240,16 @@ export function ModelSelectorPopover(props: {
                     onClick={handleManage}
                   />
                 </Tooltip>
+                <Tooltip placement="top" value={language.t("model.custom.add.button")}>
+                  <IconButton
+                    icon="plus-small"
+                    variant="ghost"
+                    iconSize="normal"
+                    class="size-6"
+                    aria-label={language.t("model.custom.add.button")}
+                    onClick={handleAddCustomModel}
+                  />
+                </Tooltip>
               </div>
             }
           />
@@ -248,24 +267,33 @@ export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
     <Dialog
       title={language.t("dialog.model.select.title")}
       action={
-        <Button
-          class="h-7 -my-1 text-14-medium"
-          icon="plus-small"
-          tabIndex={-1}
-          onClick={() => dialog.show(() => <DialogSelectProvider />)}
-        >
-          {language.t("command.provider.connect")}
-        </Button>
+        <div class="flex items-center gap-2">
+          <Button
+            class="h-7 -my-1 text-14-medium"
+            icon="plus-small"
+            variant="ghost"
+            tabIndex={-1}
+            onClick={() => dialog.show(() => <DialogAddCustomModel />)}
+          >
+            {language.t("model.custom.add.button")}
+          </Button>
+          <Button
+            class="h-7 -my-1 text-14-medium"
+            icon="plus-small"
+            tabIndex={-1}
+            onClick={() => dialog.show(() => <DialogSelectProvider />)}
+          >
+            {language.t("command.provider.connect")}
+          </Button>
+        </div>
       }
     >
       <ModelList provider={props.provider} onSelect={() => dialog.close()} />
-      <Button
-        variant="ghost"
-        class="ml-3 mt-5 mb-6 text-text-base self-start"
-        onClick={() => dialog.show(() => <DialogManageModels />)}
-      >
-        {language.t("dialog.model.manage")}
-      </Button>
+      <div class="flex gap-3 ml-3 mt-5 mb-6">
+        <Button variant="ghost" class="text-text-base" onClick={() => dialog.show(() => <DialogManageModels />)}>
+          {language.t("dialog.model.manage")}
+        </Button>
+      </div>
     </Dialog>
   )
 }

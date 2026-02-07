@@ -54,7 +54,7 @@ export const DialogSelectModelUnpaid: Component = () => {
               value={
                 <ModelTooltip
                   model={item}
-                  latest={item.latest}
+                  latest={(item as any).latest}
                   free={item.provider.id === "opencode" && (!item.cost || item.cost.input === 0)}
                 />
               }
@@ -73,7 +73,7 @@ export const DialogSelectModelUnpaid: Component = () => {
             <div class="w-full flex items-center gap-x-2.5">
               <span>{i.name}</span>
               <Tag>{language.t("model.tag.free")}</Tag>
-              <Show when={i.latest}>
+              <Show when={(i as any).latest}>
                 <Tag>{language.t("model.tag.latest")}</Tag>
               </Show>
             </div>
